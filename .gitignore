@@ -1,0 +1,9 @@
+# directories
+.vs/
+bin/
+bin-int/
+*.sln
+*.vcxproj
+*.vcxproj.*
+*.json
+!Assets/*.*
