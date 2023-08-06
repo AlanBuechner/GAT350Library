@@ -17,7 +17,7 @@ namespace Engine
 		RendererCommand::Init();
 		Time::CreateTimer();
 
-		Window::MakeWindow<MainWindow>(1080, 720, L"GAT350");
+		CreateWindows();
 
 		OnCreate();
 
@@ -31,7 +31,7 @@ namespace Engine
 			Window::SwapWindowsBuffers();
 			Window::RemoveWindows();
 
-			DBOUT("FPS: " << Time::GetFPS() << std::endl);
+			//DBOUT("FPS: " << Time::GetFPS() << std::endl);
 		}
 
 		OnDestroy();

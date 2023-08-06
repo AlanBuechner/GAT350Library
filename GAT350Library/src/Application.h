@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Window.h"
-#include "MainWindow.h"
+
+extern void CreateWindows();
 
 namespace Engine
 {

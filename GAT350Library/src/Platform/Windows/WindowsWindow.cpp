@@ -151,11 +151,6 @@ namespace Engine
 		m_Swap.SwapBuffers();
 	}
 
-	void WindowsWindow::ClearToColor(float r, float g, float b)
-	{
-		m_Swap.ClearColor(r, g, b);
-	}
-
 	LRESULT WINAPI WindowsWindow::HandleEventSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		if (msg == WM_NCCREATE)

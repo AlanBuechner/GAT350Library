@@ -42,7 +42,6 @@ namespace Engine
 		void Resize(int width, int height);
 
 		void SwapBuffers();
-		void ClearToColor(float r, float g, float b);
 
 		void CloseWindow();
 
@@ -100,7 +99,6 @@ namespace Engine
 		virtual void CloseWindow() = 0;
 
 		virtual void SwapBuffers() = 0;
-		virtual void ClearToColor(float r, float g, float b) = 0;
 
 		virtual SwapChain& GetSwapChain() = 0;
 

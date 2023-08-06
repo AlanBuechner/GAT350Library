@@ -29,6 +29,7 @@ namespace Engine
 
 	void Window::Update()
 	{
+		m_Input.lastx = m_Input.x; m_Input.lasty = m_Input.y;
 		m_NativeWindow.PullEvents();
 
 		m_Input.UpdateKeyStates();
@@ -44,11 +45,6 @@ namespace Engine
 	void Window::SwapBuffers()
 	{
 		m_NativeWindow.SwapBuffers();
-	}
-
-	void Window::ClearToColor(float r, float g, float b)
-	{
-		m_NativeWindow.ClearToColor(r, g, b);
 	}
 
 	void Window::CloseWindow()

@@ -35,7 +35,6 @@ namespace Engine
 		virtual void CloseWindow() override;
 
 		virtual void SwapBuffers() override;
-		virtual void ClearToColor(float r, float g, float b) override;
 
 		virtual SwapChain& GetSwapChain() { return m_Swap; }
 

@@ -4,11 +4,18 @@
 
 namespace Engine
 {
-	class Material
+	struct Material
 	{
-	public:
 
 		Ref<Texture2D> m_Diffuse;
-		Ref<Texture2D> m_Specular;
+		Ref<Texture2D> m_Normal;
+		Ref<Texture2D> m_Roughness;
+		Ref<Texture2D> m_Metal;
+		Ref<Texture2D> m_AO;
+
+		static Ref<Material> Create() {
+			return std::make_shared<Material>();
+		}
+
 	};
 }

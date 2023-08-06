@@ -63,9 +63,9 @@ namespace Engine
 		RendererAPI& graphics = RendererAPI::Get();
 
 		D3D11_DEPTH_STENCIL_DESC dsstate_desc = {};
-		dsstate_desc.DepthEnable = false;
+		dsstate_desc.DepthEnable = true;
 		dsstate_desc.StencilEnable = false;
-		dsstate_desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		dsstate_desc.DepthFunc = D3D11_COMPARISON_LESS;
 		dsstate_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		dsstate_desc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 		dsstate_desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;

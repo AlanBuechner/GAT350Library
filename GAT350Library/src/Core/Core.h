@@ -36,3 +36,5 @@ namespace Engine
 
 #include "Log.h"
 #include "Util/Performance.h"
+#include <filesystem>
+namespace fs = std::filesystem;

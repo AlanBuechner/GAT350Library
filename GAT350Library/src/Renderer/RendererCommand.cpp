@@ -7,6 +7,8 @@
 #include "Shader.h"
 #include "SwapChain.h"
 #include "Texture.h"
+#include "RenderTarget.h"
+#include "FrameBuffer.h"
 
 namespace Engine
 {
@@ -19,8 +21,54 @@ namespace Engine
 	{
 		RendererAPI& graphics = RendererAPI::Get();
 
-		graphics.GetContext()->OMSetRenderTargets(1u, swapChain.GetRenderTargetView().GetAddressOf(), swapChain.GetDepthStencilView().Get());
+		graphics.GetContext()->OMSetRenderTargets(1u, swapChain.GetRTV().GetAddressOf(), nullptr);
 		SetViewPort(swapChain.GetWidth(), swapChain.GetHeight(), 0, 0);
+	}
+
+	void RendererCommand::ClearSwapChain(SwapChain& swapChain, glm::vec3 color)
+	{
+		RendererAPI& graphics = RendererAPI::Get();
+
+		graphics.GetContext()->ClearRenderTargetView(swapChain.GetRTV().Get(), (float*)&color);
+		SetViewPort(swapChain.GetWidth(), swapChain.GetHeight(), 0, 0);
+	}
+
+	void RendererCommand::SetRenderTerget(Ref<RenderTarget> renderTarget)
+	{
+		RendererAPI& graphics = RendererAPI::Get();
+
+		if(renderTarget->IsDepthStencilTexture())
+			graphics.GetContext()->OMSetRenderTargets(1u, nullptr, renderTarget->GetDSV().Get());
+		else
+			graphics.GetContext()->OMSetRenderTargets(1u, renderTarget->GetRTV().GetAddressOf(), nullptr);
+		SetViewPort(renderTarget->GetWidth(), renderTarget->GetHeight(), 0, 0);
+	}
+
+	void RendererCommand::ClearRenderTarget(Ref<RenderTarget> renderTarget, glm::vec4 color)
+	{
+		RendererAPI& graphics = RendererAPI::Get();
+
+		if (renderTarget->IsDepthStencilTexture())
+			graphics.GetContext()->ClearDepthStencilView(renderTarget->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, color.r, (uint8_t)color.g);
+		else
+			graphics.GetContext()->ClearRenderTargetView(renderTarget->GetRTV().Get(), (float*)&color);
+	}
+
+	void RendererCommand::SetFrameBuffer(Ref<FrameBuffer> frameBuffer)
+	{
+		RendererAPI& graphics = RendererAPI::Get();
+
+		ID3D11DepthStencilView* dsv = nullptr;
+		std::vector<ID3D11RenderTargetView*> rtvs;
+		rtvs.reserve(frameBuffer->GetRenderTargets().size());
+
+		if (frameBuffer->HasDepthBuffer())
+			dsv = frameBuffer->GetDepthBuffer()->GetDSV().Get();
+
+		for (Ref<RenderTarget> renderTarget : frameBuffer->GetRenderTargets())
+			rtvs.push_back(renderTarget->GetRTV().Get());
+
+		graphics.GetContext()->OMSetRenderTargets((uint32_t)rtvs.size(), rtvs.data(), dsv);
 	}
 
 	void RendererCommand::SetViewPort(int width, int height, int x, int y)
@@ -51,7 +99,7 @@ namespace Engine
 		graphics.GetContext()->IASetIndexBuffer(ib->GetBuffer().Get(), DXGI_FORMAT_R32_UINT, 0);
 	}
 
-	void RendererCommand::SetMesh(Ref<Mesh::SubMesh> mesh)
+	void RendererCommand::SetMesh(Ref<Mesh> mesh)
 	{
 		SetVertexBuffer(mesh->GetVertexBuffer());
 		SetIndexBuffer(mesh->GetIndexBuffer());
@@ -60,7 +108,6 @@ namespace Engine
 	void RendererCommand::SetShader(Ref<Shader> shader)
 	{
 		RendererAPI& graphics = RendererAPI::Get();
-
 		graphics.GetContext()->IASetInputLayout(shader->GetInputLayout().Get());
 		graphics.GetContext()->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0u);
 		graphics.GetContext()->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0u);
@@ -94,20 +141,11 @@ namespace Engine
 		if ((uint32_t)bp.type & (uint32_t)Shader::ShaderType::Vertex)
 		{
 			graphics.GetContext()->VSSetShaderResources(bp.vertexSlot, 1u, texture->GetSRV().GetAddressOf());
-			graphics.GetContext()->VSSetSamplers(bp.vertexSlot, 1u, texture->GetSampler().GetAddressOf());
 		}
 		if ((uint32_t)bp.type & (uint32_t)Shader::ShaderType::Pixel)
 		{
 			graphics.GetContext()->VSSetShaderResources(bp.pixelSlot, 1u, texture->GetSRV().GetAddressOf());
-			graphics.GetContext()->PSSetSamplers(bp.pixelSlot, 1u, texture->GetSampler().GetAddressOf());
 		}
-	}
-
-	void RendererCommand::ClearToColor(glm::vec4 color)
-	{
-		/*RendererAPI& graphics = RendererAPI::Get();
-		graphics.GetContext()->ClearRenderTargetView(pTarget.Get(), (float*)&color);
-		graphics.GetContext()->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);*/
 	}
 
 	void RendererCommand::DrawIndexed(uint32_t count)
@@ -116,7 +154,7 @@ namespace Engine
 		graphics.GetContext()->DrawIndexed(count, 0u, 0u);
 	}
 
-	void RendererCommand::DrawMesh(Ref<Mesh::SubMesh> mesh)
+	void RendererCommand::DrawMesh(Ref<Mesh> mesh)
 	{
 		SetMesh(mesh);
 		DrawIndexed(mesh->GetIndexBuffer()->GetCount());

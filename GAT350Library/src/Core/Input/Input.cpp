@@ -206,7 +206,7 @@ namespace Engine
 				state[key] = Input::KeyState::Up;
 		}
 
-		// update pressed and relesed events
+		// update pressed and released events
 		for (uint32_t i = 0; i < buffer.size(); i++)
 		{
 			Input::Event e = ReadBuffer(buffer);

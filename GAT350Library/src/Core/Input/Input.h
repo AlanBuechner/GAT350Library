@@ -79,6 +79,9 @@ namespace Engine
 		int GetMouseX() { return x; }
 		int GetMouseY() { return y; }
 
+		int GetMouseDeltaX() { return lastx - x; }
+		int GetMouseDeltaY() { return lasty - y; }
+
 		// keyboard input
 		inline KeyState GetKeyState(unsigned char keycode) { return m_KeyState[keycode]; }
 
@@ -121,6 +124,7 @@ namespace Engine
 		static constexpr unsigned int bufferSize = 16u;
 		// mouse input
 		int x = 0, y = 0;
+		int lastx = 0, lasty = 0;
 		KeyState* m_ButtonState = new KeyState[3u];
 		std::queue<Event> m_MouseBuffer;
 		std::queue<unsigned char> m_UpdatedButtons;
