@@ -126,7 +126,7 @@ namespace Engine
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, Format format, unsigned char const* data);
 
 	protected:
-		void GenTextureBuffer(void* data, uint32_t additionalBindFlags = 0);
+		void GenTextureBuffer(void* data, uint32_t numMipMaps = 0);
 		void GenSRV();
 
 	protected:

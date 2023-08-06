@@ -15,7 +15,7 @@ namespace Engine
 	{
 		m_Width = width;
 		m_Height = height;
-		GenTextureBuffer(nullptr, D3D11_BIND_RENDER_TARGET);
+		GenTextureBuffer(nullptr, 1);
 		GenRTVDSV();
 		GenSRV();
 	}

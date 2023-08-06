@@ -180,7 +180,7 @@ namespace Engine
 	Texture2D::Texture2D(uint32_t width, uint32_t height, Format format, unsigned char const* data) :
 		m_Width(width), m_Height(height), m_Format(format)
 	{
-		GenTextureBuffer((void*)data, 0);
+		GenTextureBuffer((void*)data);
 		GenSRV();
 	}
 
@@ -216,6 +216,8 @@ namespace Engine
 		GenTextureBuffer(data);
 		GenSRV();
 
+		RendererAPI::Get().GetContext()->GenerateMips(m_SRV.Get());
+
 		stbi_image_free(data);
 	}
 
@@ -225,7 +227,7 @@ namespace Engine
 		return (m_SRV == o.m_SRV);
 	}
 
-	void Texture2D::GenTextureBuffer(void* data, uint32_t additionalBindFlags)
+	void Texture2D::GenTextureBuffer(void* data, uint32_t numMipMaps)
 	{
 		if (data == nullptr)
 			data = new uint8_t[m_Width * m_Height * GetFormatSize(m_Format)]{0};
@@ -235,28 +237,32 @@ namespace Engine
 		D3D11_TEXTURE2D_DESC textureDesc = { 0 };
 		textureDesc.Width = m_Width;
 		textureDesc.Height = m_Height;
-		textureDesc.MipLevels = 1;
+		textureDesc.MipLevels = numMipMaps;
 		textureDesc.ArraySize = 1;
 		textureDesc.Format = GetDXGIBufferFormat(m_Format);
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.SampleDesc.Quality = 0;
 		textureDesc.Usage = D3D11_USAGE_DEFAULT;
-		if(IsDepthStencilTexture())
+		if (IsDepthStencilTexture())
+		{
 			textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+			textureDesc.MiscFlags = 0;
+		}
 		else
-			textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | additionalBindFlags;
+		{
+			textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+			textureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
 		textureDesc.CPUAccessFlags = 0;
-		textureDesc.MiscFlags = 0;
 
-		D3D11_SUBRESOURCE_DATA sd = { 0 };
-		sd.pSysMem = (void*)data;
-		sd.SysMemPitch = m_Width * GetFormatSize(m_Format);
 
-		HRESULT hr = graphics.GetDivice()->CreateTexture2D(&textureDesc, &sd, m_Buffer.GetAddressOf());
+		HRESULT hr = graphics.GetDivice()->CreateTexture2D(&textureDesc, nullptr, m_Buffer.GetAddressOf());
 		if (FAILED(hr)) {
 			DBOUT("failed to create texture");
 			return;
 		}
+
+		graphics.GetContext()->UpdateSubresource(m_Buffer.Get(), 0, nullptr, (const void*)data, m_Width * GetFormatSize(m_Format), 0);
 	}
 
 	void Texture2D::GenSRV()
