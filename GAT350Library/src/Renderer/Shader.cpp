@@ -188,6 +188,10 @@ namespace Engine
 			samplerDesc.AddressU = GetAddressMode(info.U);
 			samplerDesc.AddressV = GetAddressMode(info.V);
 			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.MipLODBias = 0;
+			samplerDesc.MinLOD = 0;
+			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+			samplerDesc.MaxAnisotropy = 8;
 
 			hr = graphics.GetDivice()->CreateSamplerState(&samplerDesc, sampler.GetAddressOf());
 			if (FAILED(hr)) {
