@@ -117,6 +117,7 @@ namespace Engine
 
 		virtual bool IsDepthStencilTexture() { return IsDepthOrStencil(m_Format); }
 
+		wrl::ComPtr<ID3D11Texture2D> GetBuffer() { return m_Buffer; }
 		wrl::ComPtr<ID3D11ShaderResourceView> GetSRV() { return m_SRV; }
 
 		virtual bool operator==(const Texture& other) const override;

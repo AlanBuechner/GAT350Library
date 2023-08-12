@@ -36,6 +36,8 @@ namespace Engine
 
 		virtual void SwapBuffers() override;
 
+		virtual bool CloseRequested() override { return m_CloseRequested; }
+
 		virtual SwapChain& GetSwapChain() { return m_Swap; }
 
 	private:
@@ -44,6 +46,7 @@ namespace Engine
 		LRESULT HandleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	private:
+		bool m_CloseRequested = false;
 		Window* m_OwningWindow;
 		// window props
 		Window::WindowProps m_Props;

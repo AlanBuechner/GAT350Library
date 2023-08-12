@@ -2,8 +2,7 @@
 #include "Core/Time.h"
 #include "Renderer/RendererCommand.h"
 #include "Util/Performance.h"
-
-int Engine::Application::s_QuitMessage = 0;
+#include "MainWindow.h"
 
 namespace Engine
 {
@@ -11,32 +10,31 @@ namespace Engine
 	Application::Application()
 	{}
 
-	int Engine::Application::Run()
+	int Application::Run()
 	{
 
+		Time::Init();
 		RendererCommand::Init();
-		Time::CreateTimer();
 
-		CreateWindows();
+		Ref<Window> window = Window::MakeWindow<MainWindow>(1080, 720, L"GAT350");
 
 		OnCreate();
 
-		while (s_QuitMessage == 0)
+		while (!window->CloseRequested())
 		{
 			Time::UpdateDeltaTime();
-			Window::UpdateWindows();
+			window->Update();
 
 			OnUpdate();
 
-			Window::SwapWindowsBuffers();
-			Window::RemoveWindows();
+			window->SwapBuffers();
 
-			//DBOUT("FPS: " << Time::GetFPS() << std::endl);
+			DBOUT("FPS: " << Time::GetFPS() << std::endl);
 		}
 
 		OnDestroy();
 
-		return s_QuitMessage;
+		return 1;
 	}
 
 	void Application::OnCreate()

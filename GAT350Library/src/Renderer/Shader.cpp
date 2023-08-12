@@ -1,9 +1,50 @@
 #include "Shader.h"
 #include "RendererAPI.h"
 #include "Buffer.h"
+#include "ShaderCompiler.h"
 
 namespace Engine
 {
+
+	D3D11_FILTER GetMinMagFilter(ShaderCompiler::SamplerInfo::MinMagFilter min, ShaderCompiler::SamplerInfo::MinMagFilter mag)
+	{
+		if (min == ShaderCompiler::SamplerInfo::MinMagFilter::Anisotropic || mag == ShaderCompiler::SamplerInfo::MinMagFilter::Anisotropic)
+			return D3D11_FILTER_ANISOTROPIC;
+
+		switch (min)
+		{
+		case ShaderCompiler::SamplerInfo::MinMagFilter::Point:
+			switch (mag)
+			{
+			case ShaderCompiler::SamplerInfo::MinMagFilter::Point:
+				return D3D11_FILTER_MIN_MAG_MIP_POINT;
+			case ShaderCompiler::SamplerInfo::MinMagFilter::Linear:
+				return D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+			}
+		case ShaderCompiler::SamplerInfo::MinMagFilter::Linear:
+			switch (mag)
+			{
+			case ShaderCompiler::SamplerInfo::MinMagFilter::Point:
+				return D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+			case ShaderCompiler::SamplerInfo::MinMagFilter::Linear:
+				return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+			}
+		}
+	}
+
+	D3D11_TEXTURE_ADDRESS_MODE GetAddressMode(ShaderCompiler::SamplerInfo::WrapMode mode)
+	{
+		switch (mode)
+		{
+		case ShaderCompiler::SamplerInfo::WrapMode::Repeat:
+			return D3D11_TEXTURE_ADDRESS_WRAP;
+		case ShaderCompiler::SamplerInfo::WrapMode::MirroredRepeat:
+			return D3D11_TEXTURE_ADDRESS_MIRROR;
+		case ShaderCompiler::SamplerInfo::WrapMode::Clamp:
+			return D3D11_TEXTURE_ADDRESS_CLAMP;
+		}
+	}
+
 	DXGI_FORMAT ShaderDataTypeToDXGIFormat(ShaderDataType& type)
 	{
 		switch (type)
@@ -23,48 +64,86 @@ namespace Engine
 		return DXGI_FORMAT_UNKNOWN;
 	}
 
-	DXGI_FORMAT GetFormatFromDesc(D3D11_SIGNATURE_PARAMETER_DESC& desc)
+	Shader::Shader(const fs::path& path)
 	{
-		if (desc.Mask == 1)
-		{
-			if (desc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) return DXGI_FORMAT_R32_UINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) return DXGI_FORMAT_R32_SINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) return DXGI_FORMAT_R32_FLOAT;
-		}
-		else if (desc.Mask <= 3)
-		{
-			if (desc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) return DXGI_FORMAT_R32G32_UINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) return DXGI_FORMAT_R32G32_SINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) return DXGI_FORMAT_R32G32_FLOAT;
-		}
-		else if (desc.Mask <= 7)
-		{
-			if (desc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) return DXGI_FORMAT_R32G32B32_UINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) return DXGI_FORMAT_R32G32B32_SINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) return DXGI_FORMAT_R32G32B32_FLOAT;
-		}
-		else if (desc.Mask <= 15)
-		{
-			if (desc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) return DXGI_FORMAT_R32G32B32A32_UINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) return DXGI_FORMAT_R32G32B32A32_SINT;
-			else if (desc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		}
-		return DXGI_FORMAT_UNKNOWN;
+
+		std::ifstream file(path);
+		file.seekg(0, std::ios::end);
+		size_t size = file.tellg();
+		std::string src(size, ' ');
+		file.seekg(0);
+		file.read(&src[0], size);
+		LoadFromSrc(src);
 	}
 
-	Shader::Shader(const ShaderSource& src) :
-		m_VertexShaderFile(src.VetexShader)
+	Shader::Shader(const std::string& src)
 	{
-		LoadShader(src.VetexShader, ShaderType::Vertex);
-		LoadShader(src.PixelShader, ShaderType::Pixel);
+		LoadFromSrc(src);
+	}
 
-		GenInputLayoutFromReflection();
+	bool Shader::operator==(const Shader& other)
+	{
+		return m_VertexShader == other.m_VertexShader && m_PixelShader == other.m_PixelShader;
+	}
 
+	void Shader::LoadFromSrc(const std::string& src)
+	{
 		RendererAPI& graphics = RendererAPI::Get();
+		ShaderCompiler::CompiledShader compiledShader = ShaderCompiler::Compile(src);
+
+		graphics.GetDivice()->CreateVertexShader(compiledShader.vertexShader->GetBufferPointer(), compiledShader.vertexShader->GetBufferSize(), nullptr, &m_VertexShader);
+		graphics.GetDivice()->CreatePixelShader(compiledShader.pixelShader->GetBufferPointer(), compiledShader.pixelShader->GetBufferSize(), nullptr, &m_PixelShader);
+
+		for (ShaderCompiler::BindingInfo binding : compiledShader.bindings)
+			AddBindPoint(binding.name, binding.type, binding.point);
+
+		std::vector<D3D11_INPUT_ELEMENT_DESC> ied(compiledShader.inputSigniture.size());
+		for (uint32_t i = 0; i < compiledShader.inputSigniture.size(); i++)
+		{
+			ied[i] = {
+				compiledShader.inputSigniture[i].semanticName.c_str(),
+				compiledShader.inputSigniture[i].semanticIndex,
+				compiledShader.inputSigniture[i].format,
+				0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0
+			};
+		}
+
+		HRESULT hr = graphics.GetDivice()->CreateInputLayout(ied.data(), (uint32_t)ied.size(), compiledShader.vertexShader->GetBufferPointer(), compiledShader.vertexShader->GetBufferSize(), &m_InputLayout);
+		if (FAILED(hr)) {
+			DBOUT("failed to create layout from reflection" << std::endl);
+			return;
+		}
 
 		D3D11_DEPTH_STENCIL_DESC dsstate_desc = {};
 		dsstate_desc.DepthEnable = true;
 		dsstate_desc.StencilEnable = false;
+		switch (compiledShader.config.depthTestFunc)
+		{
+		case ShaderCompiler::DepthTestFunc::Never:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_NEVER;
+			break;
+		case ShaderCompiler::DepthTestFunc::Equal:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_EQUAL;
+			break;
+		case ShaderCompiler::DepthTestFunc::Not_Equal:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_NOT_EQUAL;
+			break;
+		case ShaderCompiler::DepthTestFunc::Less:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_LESS;
+			break;
+		case ShaderCompiler::DepthTestFunc::Less_Equal:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+			break;
+		case ShaderCompiler::DepthTestFunc::Greater:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_GREATER;
+			break;
+		case ShaderCompiler::DepthTestFunc::Greater_Equal:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
+			break;
+		case ShaderCompiler::DepthTestFunc::Always:
+			dsstate_desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+			break;
+		}
 		dsstate_desc.DepthFunc = D3D11_COMPARISON_LESS;
 		dsstate_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		dsstate_desc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
@@ -77,7 +156,19 @@ namespace Engine
 
 		D3D11_RASTERIZER_DESC rasterizer_desc = {};
 		rasterizer_desc.AntialiasedLineEnable = false;
-		rasterizer_desc.CullMode = D3D11_CULL_NONE;
+		switch (compiledShader.config.cullMode)
+		{
+		case ShaderCompiler::CullMode::None:
+			rasterizer_desc.CullMode = D3D11_CULL_NONE;
+			break;
+		case ShaderCompiler::CullMode::Front:
+			rasterizer_desc.CullMode = D3D11_CULL_FRONT;
+			break;
+		case ShaderCompiler::CullMode::Back:
+			rasterizer_desc.CullMode = D3D11_CULL_BACK;
+			break;
+
+		}
 		rasterizer_desc.DepthBias = 0;
 		rasterizer_desc.DepthBiasClamp = 0.0f;
 		rasterizer_desc.DepthClipEnable = false;
@@ -87,111 +178,29 @@ namespace Engine
 		rasterizer_desc.ScissorEnable = false;
 		rasterizer_desc.SlopeScaledDepthBias = 0.0f;
 		graphics.GetDivice()->CreateRasterizerState(&rasterizer_desc, m_RasterizerState.GetAddressOf());
-	}
 
-	void Shader::GenInputLayoutFromReflection()
-	{
-		RendererAPI& graphics = RendererAPI::Get();
-
-		wrl::ComPtr<ID3DBlob> pBlob = ReadBlob(m_VertexShaderFile);
-
-		// reflect on the shader
-		ID3D11ShaderReflection* pReflector = nullptr;
-		HRESULT hr = D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_ID3D11ShaderReflection, (void**)&pReflector);
-
-		// check if the reflection failed
-		if (FAILED(hr)) {
-			DBOUT("shader reflection failed" << std::endl);
-			return;
-		}
-
-		// get the descriptor for the shader
-		D3D11_SHADER_DESC reflectDesc;
-		pReflector->GetDesc(&reflectDesc);
-
-		uint32_t numInputParams = reflectDesc.InputParameters;
-		D3D11_INPUT_ELEMENT_DESC* ied = new D3D11_INPUT_ELEMENT_DESC[numInputParams];
-
-		for (uint32_t i = 0; i < numInputParams; i++)
+		// create samplers
+		for (ShaderCompiler::SamplerInfo info : compiledShader.samplers)
 		{
-			D3D11_SIGNATURE_PARAMETER_DESC ps;
-			pReflector->GetInputParameterDesc(i, &ps);
+			wrl::ComPtr<ID3D11SamplerState> sampler;
+			D3D11_SAMPLER_DESC samplerDesc = {};
+			samplerDesc.Filter = GetMinMagFilter(info.Min, info.Mag);
+			samplerDesc.AddressU = GetAddressMode(info.U);
+			samplerDesc.AddressV = GetAddressMode(info.V);
+			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 
-			ied[i] = { ps.SemanticName, ps.SemanticIndex, GetFormatFromDesc(ps), 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
-		}
-
-		hr = graphics.GetDivice()->CreateInputLayout(ied, numInputParams, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &m_pInputLayout);
-
-		if (FAILED(hr)) {
-			DBOUT("failed to create layout from reflection" << std::endl);
-		}
-
-		delete[] ied;
-	}
-
-	bool Shader::operator==(const Shader& other)
-	{
-		return m_pVertexShader == other.m_pVertexShader && m_pPixelShader == other.m_pPixelShader;
-	}
-
-	void Shader::LoadShader(const std::wstring& file, ShaderType type)
-	{
-		RendererAPI& graphics = RendererAPI::Get();
-
-		wrl::ComPtr<ID3DBlob> pBlob = ReadBlob(file);
-
-		switch (type)
-		{
-		case Engine::Shader::ShaderType::Vertex:
-			graphics.GetDivice()->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pVertexShader);
-			break;
-		case Engine::Shader::ShaderType::Pixel:
-			graphics.GetDivice()->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pPixelShader);
-			break;
-		default:
-			break;
-		}
-
-		GenBuffers(pBlob, type);
-	}
-
-	void Shader::GenBuffers(wrl::ComPtr<ID3DBlob> pBlob, ShaderType type)
-	{
-		ID3D11ShaderReflection* pReflector = nullptr;
-		HRESULT hr = D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_ID3D11ShaderReflection, (void**)&pReflector);
-
-		// check if the reflection failed
-		if (FAILED(hr)) {
-			DBOUT("shader reflection failed" << std::endl);
-			return;
-		}
-
-		// get the descriptor for the shader
-		D3D11_SHADER_DESC reflectDesc;
-		pReflector->GetDesc(&reflectDesc);
-
-		// iterate over all the constant buffers
-		for (uint32_t cbIndex = 0; cbIndex < reflectDesc.ConstantBuffers; cbIndex++)
-		{
-			// get the constant buffer
-			ID3D11ShaderReflectionConstantBuffer* cb = pReflector->GetConstantBufferByIndex(cbIndex);
-			if (cb)
-			{
-				// get the descriptor of the constant buffer
-				D3D11_SHADER_BUFFER_DESC cbDesc;
-				cb->GetDesc(&cbDesc);
-				if (cbDesc.Type == D3D11_CT_CBUFFER)
-					AddBindPoint(cbDesc.Name, type, cbIndex);
+			hr = graphics.GetDivice()->CreateSamplerState(&samplerDesc, sampler.GetAddressOf());
+			if (FAILED(hr)) {
+				DBOUT("failed to create sampler" << std::endl);
+				continue;
 			}
-		}
 
-		// iterate over all BoundResources
-		for (uint32_t srvIndex = 0; srvIndex < reflectDesc.BoundResources; srvIndex++)
-		{
-			D3D11_SHADER_INPUT_BIND_DESC bindDesc;
-			pReflector->GetResourceBindingDesc(srvIndex, &bindDesc);
-			if (bindDesc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED)
-				AddBindPoint(bindDesc.Name, type, bindDesc.BindPoint);
+			Sampler s;
+			s.sampler = sampler;
+			s.info.type = info.bindInfo.type;
+			s.info.pixelSlot = info.bindInfo.point;
+			s.info.vertexSlot = info.bindInfo.point;
+			m_Samplers.push_back(s);
 		}
 	}
 
@@ -215,18 +224,12 @@ namespace Engine
 		m_BindPoints[name] = info;
 	}
 
-	wrl::ComPtr<ID3DBlob> Shader::ReadBlob(const std::wstring& fileName)
+	Ref<Shader> Shader::Create(const fs::path& path)
 	{
-		wrl::ComPtr<ID3DBlob> pBlob;
-		HRESULT hr = D3DReadFileToBlob((L"ShaderBin/" + fileName).c_str(), &pBlob);
-
-		if (FAILED(hr))
-			DBOUT("failed to read from file \"ShaderBin/" << fileName << "\"" << std::endl);
-
-		return pBlob;
+		return std::make_shared<Shader>(path);
 	}
 
-	Ref<Shader> Shader::Create(const ShaderSource& src)
+	Ref<Shader> Shader::CreateFromSrc(const std::string& src)
 	{
 		return std::make_shared<Shader>(src);
 	}

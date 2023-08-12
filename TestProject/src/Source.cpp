@@ -13,7 +13,8 @@
 #pragma comment(lib, "D3DCompiler.lib")
 #pragma comment(lib, "dxguid.lib")
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int main(int argc, char** argv)
 {
 
 	try
@@ -39,10 +40,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 
 	return -1;
-}
-
-
-void CreateWindows()
-{
-	Engine::Window::MakeWindow<MainWindow>(1080, 720, L"GAT350");
 }

@@ -1,6 +1,5 @@
 #include "Core.h"
 #include "Window.h"
-#include "Application.h"
 #include "Renderer/RendererCommand.h"
 
 #ifdef PLATFORM_WINDOWS
@@ -9,9 +8,6 @@
 
 
 #include <functional>
-
-std::vector<Engine::Ref<Engine::Window>> Engine::Window::s_Windows;
-std::vector<Engine::Window*> Engine::Window::s_WindowsToRemove;
 
 namespace Engine
 {
@@ -50,7 +46,6 @@ namespace Engine
 	void Window::CloseWindow()
 	{
 		OnClose();
-		s_WindowsToRemove.push_back(this);
 	}
 
 	float Window::GetAspect()
@@ -58,40 +53,10 @@ namespace Engine
 		return (float)m_NativeWindow.GetProps().width / (float)m_NativeWindow.GetProps().height;
 	}
 
-	void Window::UpdateWindows()
+	bool Window::CloseRequested()
 	{
-		CREATE_PROFILE_FUNCTIONI();
-		for (uint32_t i = 0; i < s_Windows.size(); i++)
-		{
-			s_Windows[i]->Update();
-		}
+		return m_NativeWindow.CloseRequested();
 	}
-
-	void Window::SwapWindowsBuffers()
-	{
-		CREATE_PROFILE_FUNCTIONI();
-		for (uint32_t i = 0; i < s_Windows.size(); i++)
-		{
-			s_Windows[i]->SwapBuffers();
-		}
-	}
-
-	void Window::RemoveWindows()
-	{
-		CREATE_PROFILE_FUNCTIONI();
-		for(uint32_t wtr = 0; wtr < s_WindowsToRemove.size(); wtr++)
-		{
-			for (uint32_t w = 0; w < s_Windows.size(); w++)
-			{
-				if (s_Windows[w].get() == s_WindowsToRemove[wtr]) {
-					s_Windows.erase(s_Windows.begin() + w);
-					break;
-				}
-			}
-		}
-		s_WindowsToRemove.clear();
-	}
-
 
 	NativeWindow& NativeWindow::CreateNativeWindow(Window::WindowProps props, Window* owningWindow)
 	{

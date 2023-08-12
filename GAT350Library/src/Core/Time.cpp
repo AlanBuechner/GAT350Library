@@ -22,7 +22,7 @@ namespace Engine
 		m_LastFrameTime = time;
 	}
 
-	void Time::CreateTimer()
+	void Time::Init()
 	{
 		m_LastFrameTime = GetTime();
 	}

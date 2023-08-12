@@ -9,8 +9,6 @@ namespace Engine
 {
 	class Time
 	{
-		friend Application;
-
 	public:
 		Time() {}
 
@@ -22,10 +20,9 @@ namespace Engine
 
 		static double GetTime();
 
-	private:
 		static void UpdateDeltaTime();
 
-		static void CreateTimer();
+		static void Init();
 
 	protected:
 		static double m_DeltaTime;

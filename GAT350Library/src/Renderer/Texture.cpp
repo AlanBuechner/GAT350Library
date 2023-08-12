@@ -22,7 +22,7 @@ stbi_uc* T24To32(uint32_t width, uint32_t height, stbi_uc* data)
 			np.r = op.r;
 			np.g = op.g;
 			np.b = op.b;
-			np.a = 1;
+			np.a = 255;
 		}
 	}
 
@@ -273,7 +273,7 @@ namespace Engine
 		srvDesc.Format = GetDXGISRVFormat(m_Format);
 		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MipLevels = -1;
 		HRESULT hr = graphics.GetDivice()->CreateShaderResourceView(m_Buffer.Get(), &srvDesc, m_SRV.GetAddressOf());
 		if (FAILED(hr)) {
 			DBOUT("failed to create texture resorce");

@@ -16,8 +16,8 @@ namespace Engine
 		struct Vertex {
 			glm::vec4 Position;
 			glm::vec3 Normal;
-			glm::vec4 Color;
-			glm::vec2 TextCord;
+			glm::vec3 Tangent;
+			glm::vec2 UV;
 		};
 
 		Mesh(Vertex* vertices, uint32_t vertCount, uint32_t* indeces, uint32_t indexCount);

@@ -47,6 +47,8 @@ namespace Engine
 
 		float GetAspect();
 
+		bool CloseRequested();
+
 	protected:
 		virtual void OnCreate() {};
 		virtual void OnUpdate() {};
@@ -54,10 +56,6 @@ namespace Engine
 
 	public:
 		Input m_Input;
-
-	private:
-		static std::vector<Ref<Window>> s_Windows;
-		static std::vector<Window*> s_WindowsToRemove;
 
 	protected:
 		NativeWindow& m_NativeWindow;
@@ -72,14 +70,9 @@ namespace Engine
 			props.height = height;
 			props.name = name;
 			Ref<T> window = std::make_shared<T>(props);
-			s_Windows.push_back(window);
 			((Window*)window.get())->OnCreate();
 			return window;
 		}
-
-		static void UpdateWindows();
-		static void SwapWindowsBuffers();
-		static void RemoveWindows();
 	};
 
 	class NativeWindow
@@ -99,6 +92,8 @@ namespace Engine
 		virtual void CloseWindow() = 0;
 
 		virtual void SwapBuffers() = 0;
+
+		virtual bool CloseRequested() = 0;
 
 		virtual SwapChain& GetSwapChain() = 0;
 

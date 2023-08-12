@@ -30,12 +30,9 @@ namespace Engine
 
 		graphics.GetFactory()->CreateSwapChain((IUnknown*)graphics.GetDivice().Get(), &sd, &m_Swap);
 
-		wrl::ComPtr<ID3D11Resource> pBackBuffer;
-		m_Swap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer);
+		m_Swap->GetBuffer(0, __uuidof(ID3D11Resource), &m_BackBuffer);
 
-		graphics.GetDivice()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &m_RTV);
-
-		CreateDepthBuffer(width, height);
+		graphics.GetDivice()->CreateRenderTargetView(m_BackBuffer.Get(), nullptr, m_RTV.GetAddressOf());
 	}
 
 	void SwapChain::Resize(uint32_t width, uint32_t height)
@@ -68,13 +65,9 @@ namespace Engine
 			m_Swap->ResizeBuffers(0, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
 			// recreate the render target
-			wrl::ComPtr<ID3D11Resource> pBackBuffer;
-			m_Swap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer);
+			m_Swap->GetBuffer(0, __uuidof(ID3D11Resource), &m_BackBuffer);
 
-			graphics.GetDivice()->CreateRenderTargetView(pBackBuffer.Get(), nullptr, m_RTV.GetAddressOf());
-
-			// recreate the depth buffer
-			CreateDepthBuffer(width, height);
+			graphics.GetDivice()->CreateRenderTargetView(m_BackBuffer.Get(), nullptr, m_RTV.GetAddressOf());
 		}
 	}
 
@@ -87,38 +80,6 @@ namespace Engine
 	{
 		
 		return *new SwapChain();
-	}
-
-	void SwapChain::CreateDepthBuffer(uint32_t width, uint32_t height)
-	{
-		RendererAPI& graphics = RendererAPI::Get();
-
-		D3D11_DEPTH_STENCIL_DESC dsDesc = {};
-		dsDesc.DepthEnable = TRUE;
-		dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-		dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-		wrl::ComPtr<ID3D11DepthStencilState> pDSState;
-		HRESULT hr = graphics.GetDivice()->CreateDepthStencilState(&dsDesc, &pDSState);
-		if (FAILED(hr)) {
-			DBOUT("failed to create depth stencil state" << std::endl);
-		}
-
-		graphics.GetContext()->OMSetDepthStencilState(pDSState.Get(), 1u);
-
-		wrl::ComPtr<ID3D11Texture2D> pDepthStencil;
-		D3D11_TEXTURE2D_DESC descDepth = {};
-		descDepth.Width = width;
-		descDepth.Height = height;
-		descDepth.MipLevels = 1u;
-		descDepth.ArraySize = 1u;
-		descDepth.Format = DXGI_FORMAT_D32_FLOAT;
-		descDepth.SampleDesc.Count = 1u;
-		descDepth.SampleDesc.Quality = 0u;
-		descDepth.Usage = D3D11_USAGE_DEFAULT;
-		descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-		graphics.GetDivice()->CreateTexture2D(&descDepth, nullptr, &pDepthStencil);
 	}
 
 }

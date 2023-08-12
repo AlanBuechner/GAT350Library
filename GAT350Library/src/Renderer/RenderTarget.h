@@ -6,15 +6,12 @@
 
 namespace Engine
 {
-	class RenderTarget : Texture2D
+	class RenderTarget : public Texture2D
 	{
 	public:
 		RenderTarget(uint32_t width, uint32_t height, Format format);
 
 		void Resize(uint32_t width, uint32_t height);
-
-		virtual uint32_t GetWidth() const override { return m_Width; }
-		virtual uint32_t GetHeight() const override { return m_Height; }
 
 		virtual bool IsDepthStencilTexture() override { return Texture2D::IsDepthStencilTexture(); }
 

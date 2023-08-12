@@ -37,8 +37,14 @@ namespace Engine
 		static void SetStructruedBuffer(Shader::BindPointInfo bp, Ref<StructuredBuffer> sb);
 		static void SetTexture(Shader::BindPointInfo bp, Ref<Texture2D> texture);
 
+		static void BlitToSwapChain(SwapChain& swapChain, Ref<RenderTarget> renderTarget);
+
 		static void DrawIndexed(uint32_t count);
 		static void DrawMesh(Ref<Mesh> mesh);
+
+	private:
+		static Ref<Shader> s_BlitShader;
+		static Ref<Mesh> s_ScreenMesh;
 
 	};
 }

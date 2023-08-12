@@ -36,11 +36,13 @@ namespace Engine
 
 		// load mesh data from the file
 		Assimp::Importer imp;
-		auto model = imp.ReadFile(path.string(),
-			aiProcess_Triangulate |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_GenNormals |
-			aiProcess_FlipWindingOrder
+		auto model = imp.ReadFile(path.string(), 0
+			| aiProcess_Triangulate
+			| aiProcess_JoinIdenticalVertices
+			| aiProcess_GenNormals 
+			| aiProcess_CalcTangentSpace
+//			| aiProcess_FlipWindingOrder 
+			| aiProcess_FlipUVs
 		);
 
 		if (model == nullptr)
@@ -93,7 +95,7 @@ namespace Engine
 				vertices.push_back({
 					{ mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z, 1.0f },
 					{ mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z },
-					GetColor(mesh, j),
+					{ mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z },
 					GetUVCoords(mesh, j)
 				});
 			}

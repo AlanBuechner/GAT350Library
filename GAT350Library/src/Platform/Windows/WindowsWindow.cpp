@@ -233,6 +233,7 @@ namespace Engine
 			input.ClearKeyStates();
 			break;
 		case WM_CLOSE:
+			m_CloseRequested = true;
 			m_OwningWindow->CloseWindow();
 			break;
 		}

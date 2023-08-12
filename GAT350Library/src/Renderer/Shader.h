@@ -7,12 +7,6 @@
 
 namespace Engine
 {
-	struct ShaderSource
-	{
-		std::wstring VetexShader;
-		std::wstring PixelShader;
-	};
-
 	class Shader
 	{
 	public:
@@ -29,39 +23,44 @@ namespace Engine
 			uint32_t pixelSlot;
 		};
 
-		Shader(const ShaderSource& src);
+		struct Sampler 
+		{
+			BindPointInfo info;
+			wrl::ComPtr<ID3D11SamplerState> sampler;
+		};
 
-		void GenInputLayoutFromReflection();
+		Shader(const fs::path& path);
+		Shader(const std::string& src);
 
 		BindPointInfo GetBindPoint(const std::string& name) { return m_BindPoints[name]; }
-		wrl::ComPtr<ID3D11InputLayout> GetInputLayout() { return m_pInputLayout; }
-		wrl::ComPtr<ID3D11VertexShader> GetVertexShader() { return m_pVertexShader; }
-		wrl::ComPtr<ID3D11PixelShader> GetPixelShader() { return m_pPixelShader; }
+		wrl::ComPtr<ID3D11InputLayout> GetInputLayout() { return m_InputLayout; }
+		wrl::ComPtr<ID3D11VertexShader> GetVertexShader() { return m_VertexShader; }
+		wrl::ComPtr<ID3D11PixelShader> GetPixelShader() { return m_PixelShader; }
 		wrl::ComPtr<ID3D11DepthStencilState> GetDepthStencilState() { return m_DepthStencilState; }
 		wrl::ComPtr<ID3D11RasterizerState> GetRasterizerState() { return m_RasterizerState; }
+		std::vector<Sampler>& GetSamplers() { return m_Samplers; }
 
 		bool operator==(const Shader& other);
 
-		static Ref<Shader> Create(const ShaderSource& src);
+		static Ref<Shader> Create(const fs::path& path);
+		static Ref<Shader> CreateFromSrc(const std::string& src);
 
 	private:
 
-		void LoadShader(const std::wstring& file, ShaderType type);
-		void GenBuffers(wrl::ComPtr<ID3DBlob> pBlob, ShaderType type);
+		void LoadFromSrc(const std::string& src);
+
 		void AddBindPoint(const std::string& name, ShaderType type, uint32_t slot);
 
-		wrl::ComPtr<ID3DBlob> ReadBlob(const std::wstring& fileName);
-
 	private:
+		wrl::ComPtr<ID3D11InputLayout> m_InputLayout;
 
-		std::wstring m_VertexShaderFile;
-		wrl::ComPtr<ID3D11InputLayout> m_pInputLayout;
-
-		wrl::ComPtr<ID3D11VertexShader> m_pVertexShader;
-		wrl::ComPtr<ID3D11PixelShader> m_pPixelShader;
+		wrl::ComPtr<ID3D11VertexShader> m_VertexShader;
+		wrl::ComPtr<ID3D11PixelShader> m_PixelShader;
 
 		wrl::ComPtr<ID3D11DepthStencilState> m_DepthStencilState;
 		wrl::ComPtr<ID3D11RasterizerState> m_RasterizerState;
+
+		std::vector<Sampler> m_Samplers;
 
 		std::unordered_map<std::string, BindPointInfo> m_BindPoints;
 	};

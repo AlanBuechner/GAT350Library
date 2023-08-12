@@ -9,6 +9,8 @@ struct CameraData
 {
 	glm::mat4 view;
 	glm::mat4 viewPorjection;
+	glm::vec3 Position;
+	float padding;
 };
 
 void MainWindow::OnCreate()
@@ -20,16 +22,13 @@ void MainWindow::OnCreate()
 		Engine::RenderTarget::Create(m_NativeWindow.GetProps().width, m_NativeWindow.GetProps().height, Engine::Texture::Format::D24_UNORM_S8_UINT),
 	});
 
-	Engine::ShaderSource src;
-	src.VetexShader = L"VertexShader.vertex.cso";
-	src.PixelShader = L"PixelShader.pixel.cso";
-	m_Shader = Engine::Shader::Create(src);
+	m_Shader = Engine::Shader::Create("Assets/Shaders/TestShader.hlsl");
 
 	m_Camera = Engine::Camera::Create(Engine::Camera::ProjectionType::Perspective, glm::radians(45.0f), 0.01f, 100.0f, GetAspect());
 	m_CameraBuffer = Engine::ConstantBuffer::Create(sizeof(CameraData));
 
-	//m_Model = Engine::Model::Create("Assets/Models/Sponza/Sponza.gltf");
-	m_Model = Engine::Model::Create("Assets/Models/Suzanne/Suzanne.gltf");
+	m_Model = Engine::Model::Create("Assets/Models/Sponza/Sponza.gltf");
+	//m_Model = Engine::Model::Create("Assets/Models/Suzanne/Suzanne.gltf");
 	m_ModelBuffer = Engine::ConstantBuffer::Create(sizeof(glm::mat4));
 	m_ModelBuffer2 = Engine::ConstantBuffer::Create(sizeof(glm::mat4));
 }
@@ -73,6 +72,7 @@ void MainWindow::OnUpdate()
 	CameraData camData = {};
 	camData.view = viewMatrix;
 	camData.viewPorjection = viewPorjectionMatrix;
+	camData.Position = glm::vec4(m_CameraPosition, 1);
 	m_CameraBuffer->SetData(&camData);
 
 	// update model
@@ -83,21 +83,22 @@ void MainWindow::OnUpdate()
 	m_ModelBuffer->SetData(&transform);
 
 	// render
-	Engine::RendererCommand::SetSwapChain(m_NativeWindow.GetSwapChain());
 	Engine::RendererCommand::ClearSwapChain(m_NativeWindow.GetSwapChain(), { 1,0,0 });
-	//Engine::RendererCommand::SetFrameBuffer(m_FrameBuffer);
-	//Engine::RendererCommand::ClearRenderTarget(m_FrameBuffer->GetRenderTargets()[0], {0,1,0,1}); // clear color
+	Engine::RendererCommand::SetFrameBuffer(m_FrameBuffer);
+	Engine::RendererCommand::ClearRenderTarget(m_FrameBuffer->GetRenderTargets()[0], {0,1,0,1}); // clear color
 	Engine::RendererCommand::ClearRenderTarget(m_FrameBuffer->GetDepthBuffer(), {1,0,0,0}); // clear depth
 	Engine::RendererCommand::SetShader(m_Shader);
 	Engine::RendererCommand::SetConstantBuffer(m_Shader->GetBindPoint("Camera"), m_CameraBuffer);
 	Engine::RendererCommand::SetConstantBuffer(m_Shader->GetBindPoint("Model"), m_ModelBuffer);
-	for (uint32_t c = 0; c < m_Model->GetNumberOfNodes(); c++)
+	for (uint32_t i = 0; i < m_Model->GetNumberOfNodes(); i++)
 	{
-		Engine::RendererCommand::DrawMesh(m_Model->GetNode(c).m_Mesh);
+		Engine::RendererCommand::SetTexture(m_Shader->GetBindPoint("texDef"), m_Model->GetNode(i).m_Material->m_Diffuse);
+		Engine::RendererCommand::DrawMesh(m_Model->GetNode(i).m_Mesh);
 	}
+
+	Engine::RendererCommand::BlitToSwapChain(m_NativeWindow.GetSwapChain(), m_FrameBuffer->GetRenderTargets()[0]);
 }
 
 void MainWindow::OnClose()
 {
-	Engine::Application::Quit(69);
 }

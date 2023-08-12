@@ -21,15 +21,14 @@ namespace Engine
 		uint32_t GetWidth() { return m_Width; }
 		uint32_t GetHeight() { return m_Height; }
 
+		wrl::ComPtr<ID3D11Resource> GetBackBuffer() { return m_BackBuffer; }
 		wrl::ComPtr<ID3D11RenderTargetView> GetRTV() { return m_RTV; }
 
 		static SwapChain& CreateSwapChain();
 
 	private:
-		void CreateDepthBuffer(uint32_t width, uint32_t height);
 
-	private:
-
+		wrl::ComPtr<ID3D11Resource> m_BackBuffer;
 		wrl::ComPtr<IDXGISwapChain> m_Swap; // pointer to the swap chain 
 		wrl::ComPtr<ID3D11RenderTargetView> m_RTV; // pointer to the render target
 
