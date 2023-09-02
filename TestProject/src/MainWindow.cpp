@@ -97,6 +97,8 @@ void MainWindow::OnUpdate()
 	}
 
 	Engine::RendererCommand::BlitToSwapChain(m_NativeWindow.GetSwapChain(), m_FrameBuffer->GetRenderTargets()[0]);
+
+	DBOUT(Time::GetFPS());
 }
 
 void MainWindow::OnClose()

@@ -8,11 +8,6 @@
 
 #include "MainWindow.h"
 
-#pragma comment(lib, "DXGI.lib")
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "D3DCompiler.lib")
-#pragma comment(lib, "dxguid.lib")
-
 //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 int main(int argc, char** argv)
 {

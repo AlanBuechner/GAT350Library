@@ -11,6 +11,11 @@
 #include "FrameBuffer.h"
 #include "MeshBuilder.h"
 
+#pragma comment(lib, "DXGI.lib")
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "D3DCompiler.lib")
+#pragma comment(lib, "dxguid.lib")
+
 Engine::Ref<Engine::Shader> Engine::RendererCommand::s_BlitShader;
 Engine::Ref<Engine::Mesh> Engine::RendererCommand::s_ScreenMesh;
 
@@ -18,6 +23,7 @@ namespace Engine
 {
 	void RendererCommand::Init()
 	{
+		Time::Init(); // just to make things easier for the students
 		RendererAPI::Init();
 
 		s_BlitShader = Shader::CreateFromSrc(R"(

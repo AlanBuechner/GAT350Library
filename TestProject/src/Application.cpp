@@ -13,7 +13,6 @@ namespace Engine
 	int Application::Run()
 	{
 
-		Time::Init();
 		RendererCommand::Init();
 
 		Ref<Window> window = Window::MakeWindow<MainWindow>(1080, 720, L"GAT350");
